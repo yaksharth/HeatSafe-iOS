@@ -1,0 +1,2614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HeatSafe — Interactive iOS App Simulator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --text-primary: #2C1F17;
+    --text-secondary: #9B8C82;
+    --brand-orange: #E8703A;
+    --brand-blue: #2E9CC8;
+    --brand-green: #2DA676;
+    --phone-bg: #FBF8F4;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #F0EDE8;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-x: hidden;
+    position: relative;
+    padding: 24px;
+  }
+
+  /* Desktop Background Blobs mimicking SwiftUI AppShell */
+  .bg-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .bg-orb-orange {
+    width: 600px;
+    height: 600px;
+    background: rgba(255, 140, 90, 0.15);
+    top: -100px;
+    right: -100px;
+  }
+  .bg-orb-blue {
+    width: 500px;
+    height: 500px;
+    background: rgba(74, 172, 222, 0.12);
+    bottom: -100px;
+    left: -100px;
+  }
+
+  /* Main Desktop container */
+  .desktop-layout {
+    display: flex;
+    flex-direction: row;
+    gap: 60px;
+    align-items: center;
+    max-width: 1200px;
+    z-index: 10;
+  }
+
+  /* Sidebar Intro Instructions */
+  .sidebar {
+    width: 380px;
+    color: #2C1F17;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .sidebar h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    color: #2C1F17;
+  }
+
+  .sidebar h1 span {
+    color: var(--brand-orange);
+  }
+
+  .sidebar p {
+    font-size: 16px;
+    color: #7A6D64;
+    line-height: 1.6;
+  }
+
+  .features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.45);
+    padding: 14px 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  }
+
+  .feature-item-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  }
+
+  .feature-item-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .feature-item-text h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #2C1F17;
+    margin-bottom: 2px;
+  }
+
+  .feature-item-text p {
+    font-size: 12.5px;
+    color: #9B8C82;
+    line-height: 1.4;
+  }
+
+  /* Physical Phone Wrapper Grid */
+  .phone-container {
+    position: relative;
+    width: 375px;
+    height: 812px;
+    border-radius: 44px;
+    background: var(--phone-bg);
+    border: 10px solid #1c1917; /* High quality iPhone bezel rim */
+    box-shadow:
+      0 2px 4px rgba(0,0,0,0.1),
+      0 12px 36px rgba(0,0,0,0.15),
+      0 32px 80px rgba(0,0,0,0.12);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  /* Physical iPhone Notch */
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 34px;
+    background: #1c1917;
+    border-radius: 0 0 20px 20px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .notch-cam {
+    width: 10px;
+    height: 10px;
+    background: #2A2A2A;
+    border-radius: 50%;
+  }
+
+  .notch-pill {
+    width: 60px;
+    height: 6px;
+    background: #2A2A2A;
+    border-radius: 10px;
+  }
+
+  /* iOS Simulated Status Bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 28px 10px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    background: transparent;
+    pointer-events: none;
+  }
+
+  .status-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .status-right {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .status-right svg {
+    color: var(--text-primary);
+    fill: currentColor;
+  }
+
+  /* Screen viewport scroll wrapper */
+  .screen-viewport {
+    flex: 1;
+    overflow-y: auto;
+    padding-top: 44px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    scroll-behavior: smooth;
+  }
+
+  /* Hide scrollbars for iOS native feel */
+  .screen-viewport::-webkit-scrollbar {
+    display: none;
+  }
+  .screen-viewport {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Active view wrapper with premium iOS transition motion */
+  .app-view {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.96) translateY(12px);
+    transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow-y: auto;
+    /* Hide scrollbar */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .app-view::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-view.active-screen {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1) translateY(0);
+    position: relative; /* Maintain flow height when active */
+    z-index: 5;
+  }
+
+  /* Utility Styles */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+
+  /* Premium Dynamic CSS Animations and Micro-motions */
+  
+  /* Button Hover & Active Micro-animations */
+  .btn-tap {
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, box-shadow 0.25s ease;
+    user-select: none;
+  }
+  .btn-tap:hover {
+    transform: translateY(-1.5px);
+  }
+  .btn-tap:active {
+    transform: scale(0.95) translateY(0);
+    opacity: 0.85;
+  }
+
+  /* Gentle Floating Cloud/Sun Breathing in Onboarding */
+  @keyframes float-breathing {
+    0% { transform: translateY(0px) scale(1); }
+    50% { transform: translateY(-6px) scale(1.02); }
+    100% { transform: translateY(0px) scale(1); }
+  }
+  .sun-orb {
+    animation: float-breathing 6s infinite ease-in-out;
+  }
+  
+  @keyframes float-ring-breathing {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+  }
+  .glass-ring-container {
+    animation: float-ring-breathing 7s infinite ease-in-out;
+  }
+
+  /* Blinking colon for stopwatch session */
+  @keyframes blink-colon-anim {
+    0%, 100% { opacity: 0.15; }
+    50% { opacity: 1.0; }
+  }
+  .blinking-colon {
+    animation: blink-colon-anim 1s infinite steps(1, start);
+  }
+
+  /* Glowing Warning Pulse for Active Warning card */
+  @keyframes pulse-warning {
+    0% { box-shadow: 0 8px 24px rgba(242, 107, 53, 0.15); filter: brightness(1); }
+    50% { box-shadow: 0 14px 32px rgba(242, 107, 53, 0.32); filter: brightness(1.03); }
+    100% { box-shadow: 0 8px 24px rgba(242, 107, 53, 0.15); filter: brightness(1); }
+  }
+  .heat-risk-card {
+    animation: pulse-warning 3s infinite ease-in-out;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease !important;
+  }
+  .heat-risk-card:hover {
+    transform: translateY(-3px) scale(1.01) !important;
+  }
+
+  /* Glowing Warning Pulse for SOS Alert */
+  @keyframes pulse-sos {
+    0% { box-shadow: 0 4px 14px rgba(232, 72, 58, 0.2); }
+    50% { box-shadow: 0 8px 24px rgba(232, 72, 58, 0.45); }
+    100% { box-shadow: 0 4px 14px rgba(232, 72, 58, 0.2); }
+  }
+  .emergency-banner {
+    animation: pulse-sos 2.5s infinite ease-in-out;
+  }
+
+  /* Subtle Scale and Hover Transition for Quick Action Buttons & Cards */
+  .quick-action {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  }
+  .quick-action:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.04);
+  }
+  .hydration-row, .rec-card, .symptom-card, .prevention-card, .weekly-card, .tip-card {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  }
+  .hydration-row:hover, .rec-card:hover, .symptom-card:hover, .prevention-card:hover, .weekly-card:hover, .tip-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.03);
+  }
+
+  /* Animated Slide Up for logs when logged */
+  @keyframes log-slide-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .log-item {
+    animation: log-slide-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Animated Entrance Fade-In (Staggered Load for views elements) */
+  @keyframes content-entrance {
+    from { opacity: 0; transform: translateY(10px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  
+  /* Apply entrance animation when tab becomes active */
+  .app-view.active-screen .home-greeting,
+  .app-view.active-screen .heat-risk-card,
+  .app-view.active-screen .hydration-row,
+  .app-view.active-screen .section-title,
+  .app-view.active-screen .quick-actions,
+  .app-view.active-screen .tip-card,
+  .app-view.active-screen .weekly-card,
+  .app-view.active-screen .stats-grid,
+  .app-view.active-screen .screen-header,
+  .app-view.active-screen .risk-visual-card,
+  .app-view.active-screen .weather-grid,
+  .app-view.active-screen .rec-card,
+  .app-view.active-screen .hydration-hero,
+  .app-view.active-screen .add-water-card,
+  .app-view.active-screen .intake-log,
+  .app-view.active-screen .emergency-banner,
+  .app-view.active-screen .symptom-card,
+  .app-view.active-screen .prevention-card,
+  .app-view.active-screen .session-hero,
+  .app-view.active-screen .session-controls,
+  .app-view.active-screen .hydration-reminder,
+  .app-view.active-screen .warn-card {
+    animation: content-entrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Stagger Delays for high-end look */
+  .app-view.active-screen .home-greeting { animation-delay: 0.0s; }
+  .app-view.active-screen .heat-risk-card { animation-delay: 0.05s; }
+  .app-view.active-screen .hydration-row { animation-delay: 0.1s; }
+  .app-view.active-screen .section-title { animation-delay: 0.15s; }
+  .app-view.active-screen .quick-actions { animation-delay: 0.18s; }
+  .app-view.active-screen .tip-card { animation-delay: 0.22s; }
+
+  .app-view.active-screen .risk-visual-card { animation-delay: 0.05s; }
+  .app-view.active-screen .weather-grid { animation-delay: 0.1s; }
+  .app-view.active-screen .rec-card:nth-of-type(1) { animation-delay: 0.14s; }
+  .app-view.active-screen .rec-card:nth-of-type(2) { animation-delay: 0.18s; }
+  .app-view.active-screen .rec-card:nth-of-type(3) { animation-delay: 0.22s; }
+
+  .app-view.active-screen .hydration-hero { animation-delay: 0.05s; }
+  .app-view.active-screen .add-water-card { animation-delay: 0.1s; }
+  .app-view.active-screen .intake-log { animation-delay: 0.15s; }
+
+  .app-view.active-screen .emergency-banner { animation-delay: 0.02s; }
+  .app-view.active-screen .symptom-card:nth-of-type(1) { animation-delay: 0.06s; }
+  .app-view.active-screen .symptom-card:nth-of-type(2) { animation-delay: 0.1s; }
+  .app-view.active-screen .symptom-card:nth-of-type(3) { animation-delay: 0.14s; }
+  .app-view.active-screen .prevention-card { animation-delay: 0.18s; }
+
+  .app-view.active-screen .session-hero { animation-delay: 0.04s; }
+  .app-view.active-screen .session-controls { animation-delay: 0.08s; }
+  .app-view.active-screen .hydration-reminder { animation-delay: 0.12s; }
+  .app-view.active-screen .warn-card:nth-of-type(1) { animation-delay: 0.16s; }
+  .app-view.active-screen .warn-card:nth-of-type(2) { animation-delay: 0.2s; }
+
+  .app-view.active-screen .weekly-card { animation-delay: 0.08s; }
+  .app-view.active-screen .stats-grid { animation-delay: 0.14s; }
+
+  /* Tab dot scale transition */
+  .tab-dot {
+    transform: scale(0);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease !important;
+  }
+  .tab-item.active .tab-dot {
+    opacity: 1;
+    transform: scale(1) !important;
+  }
+
+  /* Dynamic Heat Risk Card Gradients */
+  .risk-low-gradient {
+    background: linear-gradient(145deg, #60C99E 0%, #2DA676 55%, #1D7E55 100%) !important;
+    box-shadow: 0 8px 24px rgba(45, 166, 118, 0.15) !important;
+  }
+  .risk-mod-gradient {
+    background: linear-gradient(145deg, #FAD66B 0%, #EBB13A 55%, #C28B1F 100%) !important;
+    box-shadow: 0 8px 24px rgba(235, 177, 58, 0.15) !important;
+  }
+  .risk-high-gradient {
+    background: linear-gradient(145deg, #FF8C5A 0%, #F26B35 55%, #E05520 100%) !important;
+    box-shadow: 0 8px 24px rgba(242, 107, 53, 0.15) !important;
+  }
+  .risk-extreme-gradient {
+    background: linear-gradient(145deg, #FF6B6B 0%, #E8483A 55%, #B72B20 100%) !important;
+    box-shadow: 0 8px 24px rgba(232, 72, 58, 0.2) !important;
+  }
+
+  /* Heat Risk Scale Highlight Colors & Transition */
+  .scale-seg {
+    transition: outline 0.4s cubic-bezier(0.16, 1, 0.3, 1), outline-offset 0.4s ease;
+  }
+  .scale-seg.active-segment {
+    outline: 2.5px solid currentColor;
+    outline-offset: 2.5px;
+    position: relative;
+    z-index: 10;
+  }
+  
+  .scale-seg.active-segment.scale-low { color: #2DA676; }
+  .scale-seg.active-segment.scale-mod { color: #EBB13A; }
+  .scale-seg.active-segment.scale-high { color: #E8703A; }
+  .scale-seg.active-segment.scale-vhigh { color: #E8483A; }
+
+  /* Onboarding Common Gradients */
+  .gradient-warm {
+    background: linear-gradient(135deg, #FFB97D 0%, #FFCF9F 50%, #FFF6EE 100%);
+  }
+  .gradient-cool {
+    background: linear-gradient(135deg, #A9D3FF 0%, #D9ECFF 50%, #F7FBFF 100%);
+  }
+  .gradient-cream {
+    background: linear-gradient(135deg, #FFF6EE 0%, #FFF9F4 50%, #F7F3EE 100%);
+  }
+
+  /* ONBOARDING VIEW STYLING */
+  .ob-content {
+    padding: 32px 36px 20px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 720px;
+    justify-content: space-between;
+  }
+
+  .ob-top {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .ob-badge-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 24px;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 16px rgba(255, 212, 169, 0.4);
+    margin-top: 24px;
+  }
+
+  .ob-badge-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .ob-text-sec {
+    display: flex;
+    flex-direction: column;
+    margin-top: 36px;
+  }
+
+  .ob-tagline {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--brand-orange);
+    text-transform: uppercase;
+  }
+
+  .ob-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 44px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 0.95;
+    letter-spacing: -2.2px;
+    margin-top: 18px;
+  }
+
+  .ob-desc {
+    font-size: 17px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin-top: 24px;
+  }
+
+  /* Conditions Card in Climate */
+  .conditions-card {
+    border-radius: 38px;
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    margin-top: 36px;
+  }
+
+  .cond-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cond-header p {
+    font-size: 14px;
+    font-weight: 500;
+    color: #9B5E2A;
+  }
+
+  .cond-header h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 56px;
+    font-weight: 600;
+    color: #A14E11;
+    letter-spacing: -1.5px;
+    margin-top: 4px;
+  }
+
+  .sun-orb {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFD4A9 0%, #FFAB69 100%);
+    box-shadow: 0 10px 20px rgba(255, 158, 87, 0.4);
+    border: 2px solid rgba(255,255,255,0.35);
+  }
+
+  .cond-desc {
+    font-size: 15px;
+    color: #6E645B;
+    line-height: 1.5;
+    margin-top: 20px;
+  }
+
+  /* Ring inside Hydration Intro */
+  .intro-ring-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 24px;
+  }
+
+  .glass-ring-container {
+    width: 256px;
+    height: 256px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 30px 60px rgba(76, 151, 255, 0.12);
+  }
+
+  .intro-ring-center {
+    position: absolute;
+    text-align: center;
+  }
+
+  .intro-ring-center h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 56px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+
+  .intro-ring-center p {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  /* Permissions rows */
+  .perm-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 28px;
+  }
+
+  .perm-row {
+    border-radius: 30px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .perm-icon-box {
+    width: 56px;
+    height: 56px;
+    border-radius: 20px;
+    background: #F8F3ED;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .perm-icon-box svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .perm-text h4 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .perm-text p {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+
+  /* Onboarding dot indicators and buttons */
+  .ob-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 24px;
+  }
+
+  .ob-dots {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .ob-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #DDD5CC;
+    transition: width 0.3s ease, border-radius 0.3s ease, background 0.3s ease;
+  }
+
+  .ob-dot.active {
+    width: 48px;
+    border-radius: 4px;
+    background: var(--brand-orange);
+  }
+
+  .ob-btn {
+    width: 100%;
+    height: 60px;
+    border-radius: 30px;
+    border: none;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ob-btn-primary {
+    background: var(--text-primary);
+    color: #fff;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
+  }
+
+  .ob-btn-secondary {
+    background: rgba(255, 255, 255, 0.6);
+    color: #5F5750;
+    border: 1px solid rgba(255,255,255,0.4);
+    margin-top: 8px;
+  }
+
+  /* MAIN WORKSPACE SCREEN CONTENT */
+  .main-content {
+    padding: 12px 20px 120px; /* Leave padding for bottom navbar overlay */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HOME STYLING */
+  .home-greeting {
+    margin-top: 8px;
+    margin-bottom: 18px;
+  }
+  .home-greeting p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+  }
+  .home-greeting h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.6px;
+  }
+
+  /* Avatar icon on Home view */
+  .header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .avatar-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFCF9F, #FF8C5A);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  .avatar-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .heat-risk-card {
+    background: linear-gradient(145deg, #FF8C5A 0%, #F26B35 55%, #E05520 100%);
+    border-radius: 24px;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(242, 107, 53, 0.15);
+  }
+
+  .heat-risk-card::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -25px;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+    pointer-events: none;
+  }
+
+  .heat-risk-card::after {
+    content: '';
+    position: absolute;
+    bottom: -35px;
+    right: 25px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    pointer-events: none;
+  }
+
+  .risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 5px 12px;
+    margin-bottom: 12px;
+  }
+
+  .risk-badge span {
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .temp-display {
+    font-family: 'Outfit', sans-serif;
+    font-size: 60px;
+    font-weight: 200;
+    color: #fff;
+    letter-spacing: -3px;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .temp-display sup {
+    font-size: 26px;
+    font-weight: 300;
+    vertical-align: top;
+    margin-top: 10px;
+    display: inline-block;
+  }
+
+  .risk-label { font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+  .risk-sublabel { font-size: 13px; color: rgba(255,255,255,0.75); margin-bottom: 12px; }
+
+  .heat-meta { display: flex; gap: 16px; }
+  .heat-meta-item { display: flex; align-items: center; gap: 5px; }
+  .heat-meta-item span { font-size: 12.5px; color: rgba(255,255,255,0.85); }
+
+  .hydration-row {
+    background: #fff;
+    border-radius: 22px;
+    padding: 18px;
+    margin-top: 16px;
+    border: 0.5px solid rgba(0,0,0,0.07);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .ring-wrap { position: relative; flex-shrink: 0; }
+  .ring-wrap svg { transform: rotate(-90deg); display: block; }
+  
+  /* Hydration progress arc paths */
+  .progress-ring-bg {
+    stroke: #F0EBE5;
+  }
+  .progress-ring-fill-blue {
+    stroke: var(--brand-blue);
+    stroke-dasharray: 194.8;
+    stroke-dashoffset: 97.4; /* default 50% */
+    transition: stroke-dashoffset 0.5s ease-out;
+  }
+
+  .ring-center {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .ring-center .rv { font-size: 18px; font-weight: 700; color: #2C1F17; }
+  .ring-center .ru { font-size: 10px; color: #9B8C82; font-weight: 500; }
+
+  .hydration-info { flex: 1; }
+  .hydration-info h3 { font-size: 15px; font-weight: 700; color: #2C1F17; margin-bottom: 4px; }
+  .hydration-info p { font-size: 12.5px; color: #9B8C82; line-height: 1.45; margin-bottom: 10px; }
+  
+  .prog-bar { height: 6px; background: #F0EBE5; border-radius: 10px; overflow: hidden; position: relative;}
+  .prog-fill { height: 100%; background: linear-gradient(90deg, #4AACDE, #2A8CBE); border-radius: 10px; width: 50%; transition: width 0.5s ease-out; }
+
+  .section-title { font-size: 11.5px; font-weight: 700; color: #9B8C82; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; margin-top: 20px; }
+
+  .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+  .quick-action {
+    background: #fff;
+    border-radius: 18px;
+    padding: 14px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    border: 0.5px solid rgba(0,0,0,0.07);
+  }
+
+  .qa-icon {
+    width: 42px; height: 42px;
+    border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .qa-icon svg { width: 22px; height: 22px; }
+  .qa-blue { background: #EBF5FC; }
+  .qa-orange { background: #FEF0EA; }
+  .qa-green { background: #EBF6F0; }
+  .qa-label { font-size: 11px; font-weight: 600; color: #4A3B32; text-align: center; line-height: 1.3; }
+
+  .tip-card {
+    background: #EBF5FC;
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    border: 0.5px solid rgba(46,156,200,0.2);
+    margin-top: 2px;
+  }
+
+  .tip-icon {
+    width: 38px; height: 38px;
+    background: rgba(46,156,200,0.18);
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .tip-icon svg { width: 20px; height: 20px; }
+  .tip-text p { font-size: 10.5px; font-weight: 700; color: #2E9CC8; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 3px; }
+  .tip-text span { font-size: 12.5px; color: #2C5B72; line-height: 1.5; }
+
+
+  /* HEADER WITH BACK BTN FOR SHEETS */
+  .screen-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-top: 4px; }
+  .back-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: none; }
+  .back-btn svg { width: 16px; height: 16px; }
+  .screen-header h2 { font-size: 20px; font-weight: 700; color: #2C1F17; letter-spacing: -0.4px; }
+
+  /* HEAT RISK SUBVIEW */
+  .risk-visual-card { background: #fff; border-radius: 22px; padding: 20px; border: 0.5px solid rgba(0,0,0,0.07); }
+  .risk-visual-card p { font-size: 12px; color: #9B8C82; margin-bottom: 10px; font-weight: 500; }
+
+  .risk-scale { display: flex; height: 9px; border-radius: 10px; overflow: hidden; gap: 3px; margin-bottom: 7px; }
+  .scale-seg { flex: 1; border-radius: 4px; }
+  .scale-low { background: #4CAF84; }
+  .scale-mod { background: #F5C842; }
+  .scale-high { background: #F28040; flex: 1.5; outline: 2.5px solid #F28040; outline-offset: 1px; }
+  .scale-vhigh { background: #E8483A; }
+
+  .risk-marker-row { display: flex; justify-content: space-between; font-size: 9.5px; color: #9B8C82; font-weight: 600; margin-bottom: 14px; }
+
+  .current-risk-tag {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: #FEF0EA; border: 0.5px solid rgba(232,112,58,0.25);
+    border-radius: 20px; padding: 6px 14px;
+  }
+
+  .crt-dot { width: 8px; height: 8px; border-radius: 50%; background: #E8703A; }
+  .current-risk-tag span { font-size: 12.5px; font-weight: 600; color: #C4531F; }
+
+  .weather-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .weather-card { background: #F8F5F1; border-radius: 16px; padding: 14px; }
+  .weather-card p { font-size: 10.5px; color: #9B8C82; font-weight: 600; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .wc-val { font-size: 24px; font-weight: 700; color: #2C1F17; letter-spacing: -0.5px; }
+  .wc-unit { font-size: 12px; color: #9B8C82; margin-left: 2px; }
+
+  .rec-card { background: #fff; border-radius: 18px; padding: 15px 16px; margin-bottom: 10px; border: 0.5px solid rgba(0,0,0,0.07); display: flex; gap: 13px; align-items: flex-start; }
+  .rec-icon { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rec-icon svg { width: 20px; height: 20px; }
+  .ri-orange { background: #FEF0EA; }
+  .ri-blue { background: #EBF5FC; }
+  .ri-green { background: #EBF6F0; }
+  .rec-body h4 { font-size: 14px; font-weight: 600; color: #2C1F17; margin-bottom: 3px; }
+  .rec-body p { font-size: 12px; color: #7A6D64; line-height: 1.45; }
+
+  /* HYDRATION SUBVIEW */
+  .screen-title { font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 700; color: #2C1F17; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .screen-subtitle { font-size: 13px; color: #9B8C82; margin-bottom: 20px; }
+
+  .hydration-hero { display: flex; flex-direction: column; align-items: center; padding: 8px 0 18px; }
+  .big-ring { position: relative; }
+  .big-ring svg { transform: rotate(-90deg); display: block; }
+  
+  .progress-ring-fill-large {
+    stroke: var(--brand-blue);
+    stroke-dasharray: 389.6;
+    stroke-dashoffset: 194.8; /* default 50% */
+    transition: stroke-dashoffset 0.5s ease-out;
+  }
+
+  .big-ring-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+  .brv { font-size: 36px; font-weight: 200; color: #2C1F17; letter-spacing: -1px; line-height: 1; }
+  .bru { font-size: 13px; color: #9B8C82; margin-top: 3px; font-weight: 600; }
+  .brg { font-size: 12px; color: #C0B5AD; margin-top: 2px; font-weight: 600; }
+
+  .add-water-card { background: #fff; border-radius: 22px; border: 0.5px solid rgba(0,0,0,0.07); padding: 18px; margin-top: 4px; }
+  .add-water-card h3 { font-size: 14px; font-weight: 700; color: #2C1F17; margin-bottom: 13px; }
+  .water-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  
+  .water-btn {
+    background: #F0F7FC;
+    border: 0.5px solid rgba(46,156,200,0.2);
+    border-radius: 14px;
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    border: none;
+    font-family: inherit;
+  }
+  
+  .water-btn svg { width: 22px; height: 22px; color: #2E9CC8; }
+  .water-btn span { font-size: 12.5px; font-weight: 700; color: #2E9CC8; }
+  .water-btn small { font-size: 10.5px; color: #7AAFC4; font-weight: 500; }
+
+  .intake-log { background: #fff; border-radius: 22px; border: 0.5px solid rgba(0,0,0,0.07); overflow: hidden; margin-top: 14px; }
+  .log-header { padding: 14px 18px; border-bottom: 0.5px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }
+  .log-header span { font-size: 14px; font-weight: 700; color: #2C1F17; }
+  .log-header small { font-size: 11.5px; color: #9B8C82; font-weight: 600; }
+  
+  .log-items { display: flex; flex-direction: column; }
+  .log-item { padding: 12px 18px; display: flex; align-items: center; gap: 13px; border-bottom: 0.5px solid rgba(0,0,0,0.04); }
+  .log-item:last-child { border-bottom: none; }
+  .log-dot { width: 8px; height: 8px; border-radius: 50%; background: #4AACDE; flex-shrink: 0; }
+  .log-item-info span { font-size: 13.5px; color: #2C1F17; font-weight: 600; }
+  .log-item-info small { display: block; font-size: 11px; color: #9B8C82; }
+  .log-ml { margin-left: auto; font-size: 13.5px; font-weight: 700; color: #2E9CC8; }
+
+  /* HEALTH / SYMPTOMS GUIDE SUBVIEW */
+  .emergency-banner {
+    background: linear-gradient(135deg, #E8483A, #CC2F27);
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    gap: 13px;
+    align-items: center;
+    margin-top: 14px;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(232, 72, 58, 0.2);
+  }
+  .eb-icon { width: 42px; height: 42px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .eb-icon svg { width: 22px; height: 22px; }
+  .eb-text h4 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .eb-text p { font-size: 12px; color: rgba(255,255,255,0.8); line-height: 1.4; }
+
+  .symptom-card { background: #fff; border-radius: 20px; border: 0.5px solid rgba(0,0,0,0.07); padding: 16px; margin-top: 10px; }
+  .symptom-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .severity-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .sev-moderate { background: #F5C842; }
+  .sev-serious { background: #F28040; }
+  .sev-critical { background: #E8483A; }
+  .symptom-card-header h4 { font-size: 14.5px; font-weight: 700; color: #2C1F17; }
+  
+  .severity-tag { margin-left: auto; font-size: 10px; font-weight: 700; border-radius: 20px; padding: 4px 10px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .stag-mod { background: #FEF9E5; color: #997A00; }
+  .stag-ser { background: #FEF0EA; color: #C4531F; }
+  .stag-cri { background: #FDEEEE; color: #A32D2D; }
+  
+  .symptom-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .symptom-chip { font-size: 12px; color: #5A4D44; background: #F3EFE9; padding: 5px 11px; border-radius: 20px; font-weight: 500; }
+
+  .prevention-card { background: #EBF6F0; border-radius: 20px; border: 0.5px solid rgba(45,166,118,0.2); padding: 16px; margin-top: 14px; }
+  .prevention-card h3 { font-size: 14px; font-weight: 700; color: #1A6644; margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
+  .prevention-card h3 svg { width: 17px; height: 17px; }
+  .prev-list { display: flex; flex-direction: column; gap: 10px; }
+  .prev-item { display: flex; align-items: flex-start; gap: 9px; }
+  .prev-check { width: 18px; height: 18px; border-radius: 50%; background: rgba(45,166,118,0.22); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .prev-check svg { width: 10px; height: 10px; }
+  .prev-item span { font-size: 12.5px; color: #2C5B42; line-height: 1.45; font-weight: 500; }
+
+  /* OUTDOOR SESSION SUBVIEW */
+  .session-hero {
+    background: linear-gradient(150deg, #2E3D52, #1A2A40);
+    border-radius: 26px;
+    padding: 24px;
+    margin-top: 14px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(26, 42, 64, 0.15);
+  }
+  .session-status { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.1); border-radius: 20px; padding: 5px 14px; margin-bottom: 18px; }
+  
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4CAF84;
+  }
+  .live-dot.blinking {
+    animation: pulse-dot 1.2s infinite alternate;
+  }
+  @keyframes pulse-dot {
+    from { opacity: 0.3; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1.2); }
+  }
+
+  .session-status span { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.09em; }
+  .session-timer { font-family: 'Outfit', sans-serif; font-size: 58px; font-weight: 200; color: #fff; letter-spacing: -3px; line-height: 1; margin-bottom: 5px; font-variant-numeric: tabular-nums; }
+  .session-timer-label { font-size: 12px; color: rgba(255,255,255,0.45); margin-bottom: 20px; font-weight: 600; }
+  
+  .session-stats { display: flex; justify-content: center; gap: 20px; }
+  .sess-stat { flex: 1; }
+  .sess-stat-val { font-size: 19px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+  .sess-stat-label { font-size: 10px; color: rgba(255,255,255,0.45); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+
+  .session-controls { display: flex; gap: 10px; margin-top: 14px; }
+  
+  .sess-primary {
+    flex: 1;
+    background: var(--brand-blue);
+    color: #fff;
+    border: none;
+    border-radius: 18px;
+    padding: 15px;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+  }
+  .sess-primary svg { width: 20px; height: 20px; }
+  
+  .sess-secondary {
+    width: 54px;
+    height: 54px;
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.09);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+  }
+  .sess-secondary svg { width: 22px; height: 22px; color: #7A6D64; }
+
+  .hydration-reminder { background: #EBF5FC; border-radius: 20px; padding: 15px 16px; margin-top: 14px; display: flex; align-items: center; gap: 13px; border: 0.5px solid rgba(46,156,200,0.18); }
+  .reminder-icon { width: 38px; height: 38px; background: rgba(46,156,200,0.18); border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .reminder-icon svg { width: 20px; height: 20px; }
+  .reminder-text h4 { font-size: 13.5px; font-weight: 700; color: #1A4D66; margin-bottom: 3px; }
+  .reminder-text p { font-size: 12px; color: #4A7A92; line-height: 1.4; }
+  
+  .reminder-btn {
+    margin-left: auto;
+    background: var(--brand-blue);
+    color: #fff;
+    border: none;
+    border-radius: 11px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-family: inherit;
+    flex-shrink: 0;
+  }
+
+  .warn-card { border-radius: 18px; padding: 14px 16px; margin-top: 10px; display: flex; gap: 11px; align-items: flex-start; }
+  .warn-card svg { width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; }
+  .warn-card-text h4 { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .warn-card-text p { font-size: 12px; line-height: 1.4; }
+  .wc-orange { background: #FEF5EE; border: 0.5px solid rgba(232,112,58,0.2); }
+  .wc-orange svg { color: #E8703A; }
+  .wc-orange h4 { color: #7A3B12; }
+  .wc-orange p { color: #9B5A33; }
+  .wc-green { background: #EBF6F0; border: 0.5px solid rgba(45,166,118,0.2); }
+  .wc-green svg { color: #2DA676; }
+  .wc-green h4 { color: #1A5C38; }
+  .wc-green p { color: #2D6647; }
+
+
+  /* PROFILE VIEW */
+  .profile-scroll {
+    position: relative;
+    width: 100%;
+    min-height: 100%;
+  }
+  .profile-blur {
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: rgba(168, 212, 255, 0.35);
+    filter: blur(50px);
+    top: 50px;
+    right: -100px;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .profile-body {
+    position: relative;
+    z-index: 10;
+    padding: 16px 20px;
+  }
+
+  .profile-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--text-primary);
+    tracking: -1.5px;
+    margin-top: 16px;
+  }
+
+  .profile-subtitle {
+    font-size: 17px;
+    color: #71685F;
+    line-height: 1.5;
+    margin-top: 8px;
+  }
+
+  /* Glass Card */
+  .weekly-card {
+    border-radius: 40px;
+    padding: 24px;
+    margin-top: 32px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.03);
+  }
+
+  .weekly-card h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #84796F;
+  }
+
+  .weekly-card h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 52px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -1.2px;
+    margin-top: 4px;
+  }
+
+  .chart-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 24px;
+    gap: 12px;
+  }
+
+  .chart-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bar-track {
+    width: 100%;
+    height: 128px;
+    border-radius: 10px;
+    background: rgba(221, 238, 255, 0.5);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    width: 100%;
+    border-radius: 10px;
+    background: linear-gradient(to top, #A9D3FF, #5DA5FF);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 0; /* Animated in JS */
+    transition: height 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .chart-bar-wrap span {
+    font-size: 12px;
+    font-weight: 700;
+    color: #84796F;
+  }
+
+  .stats-grid {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .stat-tile {
+    flex: 1;
+    border-radius: 28px;
+    padding: 20px;
+  }
+
+  .stat-tile h5 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .stat-tile h3 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 6px;
+  }
+
+  .stat-tile p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+
+  /* iOS simulated bottom nav bar overlay */
+  .tab-bar {
+    display: none;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(251, 248, 244, 0.97);
+    border-top: 0.5px solid rgba(0,0,0,0.09);
+    padding: 11px 12px 10px;
+    z-index: 998;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tab-items {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    color: #C0B5AD;
+  }
+
+  .tab-item svg {
+    width: 22px;
+    height: 22px;
+    transition: color 0.3s ease;
+  }
+
+  .tab-item span {
+    font-size: 10px;
+    font-weight: 700;
+    transition: color 0.3s ease;
+  }
+
+  .tab-item.active {
+    color: var(--brand-orange);
+  }
+
+  .tab-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--brand-orange);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .tab-item.active .tab-dot {
+    opacity: 1;
+  }
+
+  /* Safe Area Indicators */
+  .home-indicator-bar {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding-bottom: 6px;
+  }
+
+  .home-indicator-pill {
+    width: 134px;
+    height: 5px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.8);
+  }
+</style>
+</head>
+<body>
+
+<!-- Blur Background Orbs -->
+<div class="bg-orb bg-orb-orange"></div>
+<div class="bg-orb bg-orb-blue"></div>
+
+<div class="desktop-layout">
+  
+  <!-- Sidebar info panel -->
+  <div class="sidebar">
+    <h1>🌡 HeatSafe <span>Simulator</span></h1>
+    <p>We built this interactive iOS app preview so you can interact with all screens directly in your browser on Windows, without needing Xcode or a Mac build.</p>
+    
+    <div class="features-list">
+      <div class="feature-item">
+        <div class="feature-item-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-orange)" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L8 10h8l-4 12"/></svg>
+        </div>
+        <div class="feature-item-text">
+          <h3>Full Onboarding Journey</h3>
+          <p>Tap through the complete initial setups: climate gauges, hydration dials, and permissions card triggers.</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-item-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-blue)" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v6m0 0a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>
+        </div>
+        <div class="feature-item-text">
+          <h3>Interactive Water Log</h3>
+          <p>Add water inside the tracking view (+150ml, +250ml, +500ml) to see circle progress dial adjust and progress bar grow live.</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-item-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-green)" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="feature-item-text">
+          <h3>Live Session Stopwatch</h3>
+          <p>Active Outdoor Session with simulated real-time clock ticking from 24:38. Taps play/pause or logs hydration directly.</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size: 13px; color: #9B8C82; margin-top: 10px;">Select screens inside the phone or use navigation links below to jump around.</p>
+  </div>
+
+  <!-- Physical Bezel iOS simulator -->
+  <div class="phone-container">
+    <div class="notch">
+      <div class="notch-cam"></div>
+      <div class="notch-pill"></div>
+    </div>
+    
+    <!-- Status Bar overlay -->
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-right">
+        <!-- Cellularbars -->
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="1" y="7" width="2.5" height="3" rx="0.5"/>
+          <rect x="5" y="5" width="2.5" height="5" rx="0.5"/>
+          <rect x="9" y="3" width="2.5" height="7" rx="0.5"/>
+          <rect x="13" y="1" width="2.5" height="9" rx="0.5"/>
+        </svg>
+        <!-- Wifi -->
+        <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M1.5 3C4.5 0.5 10.5 0.5 13.5 3M3.5 5.5C5.5 3.8 9.5 3.8 11.5 5.5M5.5 8C6.5 7 8.5 7 9.5 8M7.5 10A0.5 0.5 0 1 1 7.5 9.9" stroke-linecap="round"/>
+        </svg>
+        <!-- Battery -->
+        <svg width="22" height="11" viewBox="0 0 22 11" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="1" y="1" width="17" height="9" rx="2.5"/>
+          <rect x="3" y="3" width="11" height="5" rx="1" fill="currentColor"/>
+          <path d="M19.5 3.5V7.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Viewport Container -->
+    <div class="screen-viewport" id="viewport">
+
+      <!-- ================== SCREEN: ONBOARDING ================== -->
+      <div class="app-view gradient-warm active-screen" id="screen-onboarding">
+        <div class="ob-content">
+          <div class="ob-top">
+            <div class="ob-badge-icon">
+              <!-- sun.max.fill -->
+              <svg viewBox="0 0 24 24" fill="var(--brand-orange)"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M5.64 18.36l-1.42 1.42M19.78 5.64l-1.42 1.42" stroke="var(--brand-orange)" stroke-width="2.5" stroke-linecap="round"/></svg>
+            </div>
+            
+            <div class="ob-text-sec">
+              <span class="ob-tagline">HEATSAFE</span>
+              <h1 class="ob-title">Extreme heat<br>is becoming<br>part of<br>everyday life.</h1>
+              <p class="ob-desc">A calmer way to stay hydrated, aware, and safer outdoors.</p>
+            </div>
+          </div>
+          
+          <div class="ob-bottom">
+            <div class="ob-dots">
+              <div class="ob-dot active"></div>
+              <div class="ob-dot"></div>
+              <div class="ob-dot"></div>
+              <div class="ob-dot"></div>
+            </div>
+            
+            <button class="ob-btn ob-btn-primary btn-tap" onclick="navigateOnboarding(1)">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SCREEN: CLIMATE ================== -->
+      <div class="app-view gradient-cream" id="screen-climate">
+        <div class="ob-content">
+          <div class="ob-top">
+            <div class="ob-badge-icon">
+              <!-- sparkles -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="#A14E11" stroke-width="2.5" stroke-linecap="round"><path d="M12 3v18M3 12h18M12 3l3 3-3 3-3-3 3-3zm0 12l3 3-3 3-3-3 3-3zM3 12l3 3-3 3-3-3 3-3zm12 0l3 3-3 3-3-3 3-3z" opacity="0.3"/><path d="M5 3L8 6 5 9 2 6l3-3zm14 0l3 3-3 3-3-3 3-3zM5 15l3 3-3 3-3-3 3-3zm14 0l3 3-3 3-3-3 3-3z" fill="#A14E11"/></svg>
+            </div>
+            
+            <div class="ob-text-sec">
+              <h1 class="ob-title" style="font-size: 40px; line-height: 1.05;">Designed for<br>warmer days and<br>safer routines.</h1>
+              
+              <div class="conditions-card glass-card">
+                <div class="cond-header">
+                  <div>
+                    <p>Today’s Conditions</p>
+                    <h2 id="climate-onboarding-temp">41°</h2>
+                  </div>
+                  <div class="sun-orb"></div>
+                </div>
+                <p class="cond-desc" id="climate-onboarding-desc">Monitor outdoor exposure, hydration, and heat risk in one calm experience.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="ob-bottom">
+            <div class="ob-dots">
+              <div class="ob-dot"></div>
+              <div class="ob-dot active"></div>
+              <div class="ob-dot"></div>
+              <div class="ob-dot"></div>
+            </div>
+            
+            <button class="ob-btn ob-btn-primary btn-tap" onclick="navigateOnboarding(2)">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SCREEN: HYDRATION INTRO ================== -->
+      <div class="app-view gradient-cool" id="screen-hydrationIntro">
+        <div class="ob-content">
+          <div class="ob-top">
+            <div class="ob-badge-icon">
+              <!-- drop.fill -->
+              <svg viewBox="0 0 24 24" fill="#5DA5FF"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+            </div>
+            
+            <div class="ob-text-sec">
+              <h1 class="ob-title" style="font-size: 40px; line-height: 1.05;">Hydration that<br>adapts to your<br>environment.</h1>
+              
+              <div class="intro-ring-wrap">
+                <div class="glass-ring-container glass-card">
+                  <!-- Circular Gauge SVG -->
+                  <svg width="216" height="216" viewBox="0 0 216 216" style="transform: rotate(-90deg);">
+                    <circle cx="108" cy="108" r="90" fill="none" stroke="#DDEEFF" stroke-width="18"/>
+                    <!-- trimmed blue gauge representing 65% (dasharray 565.48, offset 197.9) -->
+                    <circle cx="108" cy="108" r="90" fill="none" stroke="url(#blue-grad)" stroke-width="18" stroke-linecap="round" stroke-dasharray="565.48" stroke-dashoffset="197.9"/>
+                    
+                    <defs>
+                      <linearGradient id="blue-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#5DA5FF"/>
+                        <stop offset="100%" stop-color="#8AC4FF"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  
+                  <div class="intro-ring-center">
+                    <h2>2.1L</h2>
+                    <p>Daily progress</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="ob-bottom">
+            <div class="ob-dots">
+              <div class="ob-dot"></div>
+              <div class="ob-dot"></div>
+              <div class="ob-dot active"></div>
+              <div class="ob-dot"></div>
+            </div>
+            
+            <button class="ob-btn ob-btn-primary btn-tap" onclick="navigateOnboarding(3)">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SCREEN: PERMISSIONS ================== -->
+      <div class="app-view gradient-cream" id="screen-permissions">
+        <div class="ob-content">
+          <div class="ob-top">
+            <div class="ob-text-sec" style="margin-top: 24px;">
+              <h1 class="ob-title" style="font-size: 38px; line-height: 1.05;">Personalize your<br>daily wellness<br>experience.</h1>
+              
+              <div class="perm-rows">
+                <div class="perm-row glass-card">
+                  <div class="perm-icon-box">
+                    <!-- location.fill -->
+                    <svg viewBox="0 0 24 24" fill="#FF9E57"><path d="M12 2L2 22l10-4 10 4L12 2z"/></svg>
+                  </div>
+                  <div class="perm-text">
+                    <h4>Location Access</h4>
+                    <p>Real-time heat awareness and environmental conditions</p>
+                  </div>
+                </div>
+
+                <div class="perm-row glass-card">
+                  <div class="perm-icon-box">
+                    <!-- bell.fill -->
+                    <svg viewBox="0 0 24 24" fill="#5DA5FF"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  </div>
+                  <div class="perm-text">
+                    <h4>Notifications</h4>
+                    <p>Hydration reminders and outdoor safety guidance</p>
+                  </div>
+                </div>
+
+                <div class="perm-row glass-card">
+                  <div class="perm-icon-box">
+                    <!-- heart.fill -->
+                    <svg viewBox="0 0 24 24" fill="#FF6B6B"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                  </div>
+                  <div class="perm-text">
+                    <h4>Health Tracking</h4>
+                    <p>Personal hydration insights and wellness patterns</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="ob-bottom" style="gap: 8px;">
+            <div class="ob-dots" style="align-self: center; margin-bottom: 8px;">
+              <div class="ob-dot"></div>
+              <div class="ob-dot"></div>
+              <div class="ob-dot"></div>
+              <div class="ob-dot active"></div>
+            </div>
+            
+            <button class="ob-btn ob-btn-primary btn-tap" onclick="completeOnboarding()">Get Started</button>
+            <button class="ob-btn ob-btn-secondary btn-tap" onclick="completeOnboarding()">Maybe Later</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SCREEN: HOME ================== -->
+      <div class="app-view" id="screen-home" style="background: var(--phone-bg);">
+        <div class="main-content">
+          <!-- Header with Avatar -->
+          <div class="header-actions">
+            <div class="home-greeting">
+              <p>Good morning, Arjun</p>
+              <h1>Stay safe today</h1>
+            </div>
+            <button class="avatar-btn btn-tap" onclick="openProfile()">
+              <!-- Generic aesthetic outline avatar -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="width: 22px; height: 22px; margin-top: 4px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </button>
+          </div>
+
+          <!-- Heat Warning Card -->
+          <div class="heat-risk-card btn-tap" id="home-risk-card" onclick="switchTab('heat')">
+            <div class="risk-badge">
+              <!-- thermometer -->
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+              <span id="home-risk-level">High Risk</span>
+            </div>
+            <div class="temp-display" id="home-temp-display">42<sup>°C</sup></div>
+            <div class="risk-label" id="home-risk-label">Heat Warning Active</div>
+            <div class="risk-sublabel" id="home-risk-sublabel">Jaipur, Rajasthan · Updated now</div>
+            <div class="heat-meta">
+              <div class="heat-meta-item">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2"><path d="M12 2v6m0 0a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>
+                <span id="home-humidity">28% humidity</span>
+              </div>
+              <div class="heat-meta-item">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+                <span id="home-feels-like">Feels like 47°C</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hydration Summary Row -->
+          <div class="hydration-row btn-tap" onclick="switchTab('hydration')">
+            <div class="ring-wrap">
+              <svg width="78" height="78" viewBox="0 0 78 78">
+                <circle cx="39" cy="39" r="31" fill="none" class="progress-ring-bg" stroke-width="7.5"/>
+                <circle cx="39" cy="39" r="31" fill="none" class="progress-ring-fill-blue" stroke-width="7.5" stroke-linecap="round"/>
+              </svg>
+              <div class="ring-center">
+                <div class="rv" id="home-water-litres">1.5</div>
+                <div class="ru">litres</div>
+              </div>
+            </div>
+            <div class="hydration-info">
+              <h3>Hydration today</h3>
+              <p><span id="home-water-percent">50</span>% of 3L goal. Keep drinking to stay safe in this heat.</p>
+              <div class="prog-bar"><div class="prog-fill" id="home-water-progress-fill"></div></div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="section-title">Quick actions</div>
+          <div class="quick-actions">
+            <div class="quick-action btn-tap" onclick="switchTab('hydration')">
+              <div class="qa-icon qa-blue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-blue)" stroke-width="2" stroke-linecap="round"><path d="M12 2L8 10h8l-4 12"/><path d="M8 10C6 10 4 12 4 14a8 8 0 0 0 16 0c0-2-2-4-4-4"/></svg>
+              </div>
+              <div class="qa-label">Log Water</div>
+            </div>
+            <div class="quick-action btn-tap" onclick="launchSession()">
+              <div class="qa-icon qa-orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-orange)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="2"/><path d="M10 22V9l-3 4h10l-3-4v13"/></svg>
+              </div>
+              <div class="qa-label">Start Outdoor</div>
+            </div>
+            <div class="quick-action btn-tap" onclick="switchTab('symptoms')">
+              <div class="qa-icon qa-green">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-green)" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              </div>
+              <div class="qa-label">Symptoms</div>
+            </div>
+          </div>
+
+          <!-- Wellness Tip -->
+          <div class="section-title">Wellness tip</div>
+          <div class="tip-card">
+            <div class="tip-icon">
+              <!-- lightbulb -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-blue)" stroke-width="2" stroke-linecap="round"><path d="M12 2a7 7 0 0 1 7 7c0 4-3 6-3 9H8c0-3-3-5-3-9a7 7 0 0 1 7-7z"/><line x1="8" y1="22" x2="16" y2="22"/><line x1="12" y1="18" x2="12" y2="22"/></svg>
+            </div>
+            <div class="tip-text">
+              <p>Today's tip</p>
+              <span>Avoid outdoor activity between 11am – 4pm. Peak UV hours increase heat stress significantly.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SCREEN: HEAT ================== -->
+      <div class="app-view" id="screen-heat" style="background: var(--phone-bg);">
+        <div class="main-content">
+          <div class="screen-header">
+            <button class="back-btn btn-tap" onclick="switchTab('home')">
+              <!-- chevron.left -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="#4A3B32" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <h2>Heat Risk Details</h2>
+          </div>
+
+          <div class="risk-visual-card">
+            <p>Today's heat level</p>
+            <div class="risk-scale">
+              <div class="scale-seg scale-low" id="heat-scale-low"></div>
+              <div class="scale-seg scale-mod" id="heat-scale-mod"></div>
+              <div class="scale-seg scale-high" id="heat-scale-high"></div>
+              <div class="scale-seg scale-vhigh" id="heat-scale-vhigh"></div>
+            </div>
+            <div class="risk-marker-row">
+              <span>Low</span><span>Moderate</span><span>High</span><span>Extreme</span>
+            </div>
+            <div class="current-risk-tag">
+              <div class="crt-dot"></div>
+              <span id="heat-crt-text">High — take precautions now</span>
+            </div>
+          </div>
+
+          <div class="weather-grid">
+            <div class="weather-card">
+              <p>Temperature</p>
+              <div><span class="wc-val" id="heat-temp">42</span><span class="wc-unit">°C</span></div>
+            </div>
+            <div class="weather-card">
+              <p>Feels like</p>
+              <div><span class="wc-val" id="heat-feels">47</span><span class="wc-unit">°C</span></div>
+            </div>
+            <div class="weather-card">
+              <p>Humidity</p>
+              <div><span class="wc-val" id="heat-humidity">28</span><span class="wc-unit">%</span></div>
+            </div>
+            <div class="weather-card">
+              <p>UV Index</p>
+              <div><span class="wc-val" id="heat-uv">9</span><span class="wc-unit"> very high</span></div>
+            </div>
+          </div>
+
+          <div class="section-title">Safety guidance</div>
+          
+          <div class="rec-card">
+            <div class="rec-icon ri-orange">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#E8703A" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="rec-body">
+              <h4>Limit outdoor time</h4>
+              <p>Stay indoors between 11am and 4pm. Avoid strenuous activity.</p>
+            </div>
+          </div>
+
+          <div class="rec-card">
+            <div class="rec-icon ri-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-blue)" stroke-width="2" stroke-linecap="round"><path d="M12 2L8 10h8l-4 12"/></svg>
+            </div>
+            <div class="rec-body">
+              <h4>Hydrate actively</h4>
+              <p>Drink at least 3–4 litres today. Add electrolytes if outdoors.</p>
+            </div>
+          </div>
+
+          <div class="rec-card">
+            <div class="rec-icon ri-green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-green)" stroke-width="2" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>
+            </div>
+            <div class="rec-body">
+              <h4>Wear light clothing</h4>
+              <p>Loose, breathable fabrics in light colours. Cover your head.</p>
+            </div>
+          </div>
+
+          <div class="rec-card">
+            <div class="rec-icon ri-orange">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#E8703A" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            </div>
+            <div class="rec-body">
+              <h4>Stay in cool spaces</h4>
+              <p>Air-conditioned areas reduce your heat exposure significantly.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SCREEN: HYDRATION ================== -->
+      <div class="app-view" id="screen-hydration" style="background: var(--phone-bg);">
+        <div class="main-content">
+          <div class="screen-title">Hydration</div>
+          <div class="screen-subtitle">Thursday, 21 May 2026</div>
+
+          <div class="hydration-hero">
+            <div class="big-ring">
+              <svg width="150" height="150" viewBox="0 0 150 150">
+                <circle cx="75" cy="75" r="62" fill="none" class="progress-ring-bg" stroke-width="11"/>
+                <circle cx="75" cy="75" r="62" fill="none" class="progress-ring-fill-large" stroke-width="11" stroke-linecap="round"/>
+              </svg>
+              <div class="big-ring-center">
+                <div class="brv" id="hydrate-consumed-text">1.5L</div>
+                <div class="bru">consumed</div>
+                <div class="brg">of 3.0L goal</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="add-water-card">
+            <h3>Add water intake</h3>
+            <div class="water-btns">
+              <button class="water-btn btn-tap" onclick="logWaterAmount(250, 'Glass of water')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#2E9CC8" stroke-width="2" stroke-linecap="round"><path d="M8 2h8l2 4H6L8 2z"/><rect x="5" y="6" width="14" height="16" rx="3"/></svg>
+                <span>+ 250 ml</span>
+                <small>Small glass</small>
+              </button>
+              
+              <button class="water-btn btn-tap" onclick="logWaterAmount(500, 'Bottle log')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#2E9CC8" stroke-width="2" stroke-linecap="round"><path d="M8 2h8l1 4H7L8 2z"/><path d="M7 6l1 16h8l1-16"/></svg>
+                <span>+ 500 ml</span>
+                <small>Bottle</small>
+              </button>
+              
+              <button class="water-btn btn-tap" onclick="logWaterAmount(150, 'Tea break')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#2E9CC8" stroke-width="2" stroke-linecap="round"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/></svg>
+                <span>+ 150 ml</span>
+                <small>Cup / tea</small>
+              </button>
+              
+              <button class="water-btn btn-tap" onclick="logWaterCustom()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#2E9CC8" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Custom</span>
+                <small>Enter amount</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="intake-log">
+            <div class="log-header">
+              <span>Today's log</span>
+              <small id="log-summary-text">4 entries · 1,500 ml</small>
+            </div>
+            <div class="log-items" id="hydration-log-list">
+              <!-- Managed in JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SCREEN: HEALTH / SYMPTOMS ================== -->
+      <div class="app-view" id="screen-symptoms" style="background: var(--phone-bg);">
+        <div class="main-content">
+          <div class="screen-title">Symptoms guide</div>
+          <div class="screen-subtitle">Know the signs, act early</div>
+
+          <!-- SOS Banner -->
+          <div class="emergency-banner">
+            <div class="eb-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div class="eb-text">
+              <h4>Emergency: Call 112</h4>
+              <p>If someone loses consciousness or stops sweating in extreme heat.</p>
+            </div>
+          </div>
+
+          <!-- Category Cards -->
+          <div class="symptom-card">
+            <div class="symptom-card-header">
+              <div class="severity-dot sev-moderate"></div>
+              <h4>Heat cramps</h4>
+              <span class="severity-tag stag-mod">Moderate</span>
+            </div>
+            <div class="symptom-chips">
+              <span class="symptom-chip">Muscle pain</span>
+              <span class="symptom-chip">Muscle spasms</span>
+              <span class="symptom-chip">Heavy sweating</span>
+            </div>
+          </div>
+
+          <div class="symptom-card">
+            <div class="symptom-card-header">
+              <div class="severity-dot sev-serious"></div>
+              <h4>Heat exhaustion</h4>
+              <span class="severity-tag stag-ser">Serious</span>
+            </div>
+            <div class="symptom-chips">
+              <span class="symptom-chip">Dizziness</span>
+              <span class="symptom-chip">Nausea</span>
+              <span class="symptom-chip">Pale skin</span>
+              <span class="symptom-chip">Weakness</span>
+            </div>
+          </div>
+
+          <div class="symptom-card">
+            <div class="symptom-card-header">
+              <div class="severity-dot sev-critical"></div>
+              <h4>Heat stroke</h4>
+              <span class="severity-tag stag-cri">Critical</span>
+            </div>
+            <div class="symptom-chips">
+              <span class="symptom-chip">High temp 40°C+</span>
+              <span class="symptom-chip">Confusion</span>
+              <span class="symptom-chip">No sweating</span>
+              <span class="symptom-chip">Unconscious</span>
+            </div>
+          </div>
+
+          <!-- Prevention Checklist Card -->
+          <div class="prevention-card">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#1A6644" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Prevention steps
+            </h3>
+            <div class="prev-list">
+              <div class="prev-item">
+                <div class="prev-check"><svg viewBox="0 0 24 24" fill="none" stroke="#2DA676" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <span>Drink water before you feel thirsty</span>
+              </div>
+              <div class="prev-item">
+                <div class="prev-check"><svg viewBox="0 0 24 24" fill="none" stroke="#2DA676" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <span>Rest in shade every 30 minutes outdoors</span>
+              </div>
+              <div class="prev-item">
+                <div class="prev-check"><svg viewBox="0 0 24 24" fill="none" stroke="#2DA676" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <span>Never leave children in parked vehicles</span>
+              </div>
+              <div class="prev-item">
+                <div class="prev-check"><svg viewBox="0 0 24 24" fill="none" stroke="#2DA676" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <span>Check on elderly neighbours during waves</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SCREEN: OUTDOOR SESSION ================== -->
+      <div class="app-view" id="screen-session" style="background: var(--phone-bg);">
+        <div class="main-content">
+          <div class="screen-header">
+            <button class="back-btn btn-tap" onclick="switchTab('home')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#4A3B32" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <h2>Outdoor Session</h2>
+          </div>
+
+          <div class="session-hero">
+            <div class="session-status">
+              <div class="live-dot blinking" id="session-dot"></div>
+              <span id="session-status-text">Active Session</span>
+            </div>
+            <div class="session-timer" id="session-clock-text">24:38</div>
+            <div class="session-timer-label">minutes elapsed</div>
+            
+            <div class="session-stats">
+              <div class="sess-stat">
+                <div class="sess-stat-val">42°C</div>
+                <div class="sess-stat-label">Ambient</div>
+              </div>
+              <div class="sess-stat">
+                <div class="sess-stat-val" id="session-logged-display">250ml</div>
+                <div class="sess-stat-label">Logged</div>
+              </div>
+              <div class="sess-stat">
+                <div class="sess-stat-val">High</div>
+                <div class="sess-stat-label">Risk</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="session-controls">
+            <button class="sess-primary btn-tap" onclick="toggleSessionTimer()" id="sess-play-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              <span>Pause session</span>
+            </button>
+            
+            <button class="sess-secondary btn-tap" onclick="stopSession()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#7A6D64" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+            </button>
+          </div>
+
+          <!-- Interactive Active Reminder Card -->
+          <div class="hydration-reminder">
+            <div class="reminder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-blue)" stroke-width="2"><path d="M12 2L8 10h8l-4 12"/></svg>
+            </div>
+            <div class="reminder-text">
+              <h4>Time to hydrate</h4>
+              <p>15 min since last break. Drink 200–300 ml now.</p>
+            </div>
+            <button class="reminder-btn btn-tap" onclick="logSessionReminder()">Log</button>
+          </div>
+
+          <!-- Secondary Warnings -->
+          <div class="warn-card wc-orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div class="warn-card-text">
+              <h4>Peak heat window</h4>
+              <p>24 min in peak hours. Consider moving to shade soon.</p>
+            </div>
+          </div>
+
+          <div class="warn-card wc-green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div class="warn-card-text">
+              <h4>Session goal</h4>
+              <p>Recommended limit: 30 min. About 6 min remaining safely.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SCREEN: PROFILE (BONUS SCREEN) ================== -->
+      <div class="app-view" id="screen-profile" style="background: var(--phone-bg);">
+        <div class="profile-scroll">
+          <div class="profile-blur"></div>
+          
+          <div class="profile-body">
+            <!-- Back Arrow -->
+            <button class="back-btn btn-tap" onclick="switchTab('home')" style="z-index: 100;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#4A3B32" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            
+            <div class="profile-title">Your Wellness</div>
+            <div class="profile-subtitle">A personal overview of hydration and outdoor wellness patterns.</div>
+
+            <!-- Weekly Hydration Glass Card -->
+            <div class="weekly-card glass-card">
+              <h4>Weekly Hydration</h4>
+              <h2>89%</h2>
+              
+              <!-- Growth Bar Charts -->
+              <div class="chart-container">
+                <div class="chart-bar-wrap">
+                  <div class="bar-track"><div class="bar-fill" data-height="90%"></div></div>
+                  <span>M</span>
+                </div>
+                <div class="chart-bar-wrap">
+                  <div class="bar-track"><div class="bar-fill" data-height="75%"></div></div>
+                  <span>T</span>
+                </div>
+                <div class="chart-bar-wrap">
+                  <div class="bar-track"><div class="bar-fill" data-height="80%"></div></div>
+                  <span>W</span>
+                </div>
+                <div class="chart-bar-wrap">
+                  <div class="bar-track"><div class="bar-fill" data-height="95%"></div></div>
+                  <span>T</span>
+                </div>
+                <div class="chart-bar-wrap">
+                  <div class="bar-track"><div class="bar-fill" data-height="85%"></div></div>
+                  <span>F</span>
+                </div>
+                <div class="chart-bar-wrap">
+                  <div class="bar-track"><div class="bar-fill" data-height="90%"></div></div>
+                  <span>S</span>
+                </div>
+                <div class="chart-bar-wrap">
+                  <div class="bar-track"><div class="bar-fill" data-height="100%"></div></div>
+                  <span>S</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Outdoor safety stats tiles -->
+            <div style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-top: 36px;">Outdoor Safety Stats</div>
+            <div class="stats-grid">
+              <div class="stat-tile glass-card">
+                <h5>Active Outdoors</h5>
+                <h3>5.4 hrs</h3>
+                <p>Weekly total</p>
+              </div>
+              <div class="stat-tile glass-card">
+                <h5>Peak UV Exposure</h5>
+                <h3>Low</h3>
+                <p>Stayed protected</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Simulated iOS Bottom Tab Bar overlay (Shown after onboarding completed) -->
+    <div class="tab-bar" id="tab-bar">
+      <div class="tab-items">
+        <button class="tab-item btn-tap active" onclick="switchTab('home')" id="tab-home">
+          <!-- house.fill -->
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          <span>Home</span>
+          <div class="tab-dot"></div>
+        </button>
+        
+        <button class="tab-item btn-tap" onclick="switchTab('heat')" id="tab-heat">
+          <!-- thermometer -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+          <span>Heat</span>
+          <div class="tab-dot"></div>
+        </button>
+        
+        <button class="tab-item btn-tap" onclick="switchTab('hydration')" id="tab-hydration">
+          <!-- drop.fill -->
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+          <span>Hydrate</span>
+          <div class="tab-dot"></div>
+        </button>
+        
+        <button class="tab-item btn-tap" onclick="switchTab('symptoms')" id="tab-symptoms">
+          <!-- heart.fill -->
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          <span>Health</span>
+          <div class="tab-dot"></div>
+        </button>
+      </div>
+
+      <div class="home-indicator-bar">
+        <div class="home-indicator-pill"></div>
+      </div>
+    </div>
+
+    <!-- Onboarding Safe Area Pill wrapper -->
+    <div id="onboarding-indicator-bar" style="padding-bottom: 6px; display: flex; justify-content: center; position: absolute; bottom: 0; width:100%; z-index: 1002;">
+      <div class="home-indicator-pill" style="background: rgba(0,0,0,0.3);"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Global simulated state
+  const state = {
+    currentScreen: 'onboarding',
+    waterConsumedMl: 1500,
+    waterGoalMl: 3000,
+    
+    // Session stopwatch (MM:SS starts at 24:38 = 1478 seconds)
+    secondsElapsed: 24 * 60 + 38,
+    isSessionRunning: true,
+    loggedSessionWaterMl: 250,
+
+    hydrationLog: [
+      { title: 'Morning water', time: '7:15 am', amount: '500 ml' },
+      { title: 'Bottle', time: '8:40 am', amount: '500 ml' },
+      { title: 'Tea', time: '9:10 am', amount: '150 ml' },
+      { title: 'Water glass', time: '9:30 am', amount: '350 ml' }
+    ]
+  };
+
+  // Onboarding screens mapping
+  const onboardingScreens = ['onboarding', 'climate', 'hydrationIntro', 'permissions'];
+
+  // Navigate onboarding index
+  function navigateOnboarding(currentIndex) {
+    const nextScreen = onboardingScreens[currentIndex];
+    showScreen(nextScreen);
+  }
+
+  // Complete onboarding flow
+  function completeOnboarding() {
+    document.getElementById('onboarding-indicator-bar').style.display = 'none';
+    document.getElementById('tab-bar').style.display = 'flex';
+    switchTab('home');
+  }
+
+  // General Screen Transition
+  function showScreen(screenId) {
+    // Hide active screens
+    document.querySelectorAll('.app-view').forEach(view => {
+      view.classList.remove('active-screen');
+    });
+
+    const targetScreen = document.getElementById(`screen-${screenId}`);
+    if (targetScreen) {
+      targetScreen.classList.add('active-screen');
+      state.currentScreen = screenId;
+    }
+
+    // Scroll viewport to top
+    document.getElementById('viewport').scrollTop = 0;
+
+    // Special trigger for Profile charts animation
+    if (screenId === 'profile') {
+      setTimeout(() => {
+        document.querySelectorAll('.bar-fill').forEach(bar => {
+          const height = bar.getAttribute('data-height');
+          bar.style.height = height;
+        });
+      }, 100);
+    }
+  }
+
+  // Switch production tabs
+  function switchTab(tabId) {
+    // Update active tab styles
+    document.querySelectorAll('.tab-item').forEach(tab => {
+      tab.classList.remove('active');
+    });
+
+    const activeTab = document.getElementById(`tab-${tabId}`);
+    if (activeTab) {
+      activeTab.classList.add('active');
+    }
+
+    showScreen(tabId);
+    renderHydrationStats();
+  }
+
+  // Start stopwatch outdoor session
+  function launchSession() {
+    showScreen('session');
+    // Clear active highlights in tab bar as "session" is a subview route
+    document.querySelectorAll('.tab-item').forEach(tab => {
+      tab.classList.remove('active');
+    });
+
+    // Reset session parameters and initialize clock
+    state.isSessionRunning = true;
+    state.secondsElapsed = 24 * 60 + 38;
+    document.getElementById('session-clock-text').innerHTML = formatSeconds(state.secondsElapsed, true);
+    
+    // Ensure controls and indicators match playing state
+    const playBtn = document.getElementById('sess-play-btn');
+    if (playBtn) {
+      playBtn.querySelector('span').textContent = 'Pause session';
+      playBtn.querySelector('svg').innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+    }
+    const statusText = document.getElementById('session-status-text');
+    if (statusText) statusText.textContent = 'Active Session';
+    const liveDot = document.getElementById('session-dot');
+    if (liveDot) {
+      liveDot.classList.add('blinking');
+      liveDot.style.opacity = '1.0';
+    }
+  }
+
+  // Format MM:SS helper with blinking colon support
+  function formatSeconds(totalSeconds, blink = true) {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    const colonClass = (blink && state.isSessionRunning) ? 'blinking-colon' : '';
+    return `${mins.toString().padStart(2, '0')}<span class="${colonClass}">:</span>${secs.toString().padStart(2, '0')}`;
+  }
+
+  // Stopwatch ticking logic
+  setInterval(() => {
+    if (state.currentScreen === 'session' && state.isSessionRunning) {
+      state.secondsElapsed += 1;
+      document.getElementById('session-clock-text').innerHTML = formatSeconds(state.secondsElapsed, true);
+    }
+  }, 1000);
+
+  // Play/Pause Stopwatch toggle
+  function toggleSessionTimer() {
+    state.isSessionRunning = !state.isSessionRunning;
+    const playBtn = document.getElementById('sess-play-btn');
+    const statusText = document.getElementById('session-status-text');
+    const liveDot = document.getElementById('session-dot');
+
+    if (state.isSessionRunning) {
+      playBtn.querySelector('span').textContent = 'Pause session';
+      playBtn.querySelector('svg').innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+      statusText.textContent = 'Active Session';
+      liveDot.classList.add('blinking');
+      liveDot.style.opacity = '1.0';
+    } else {
+      playBtn.querySelector('span').textContent = 'Resume session';
+      playBtn.querySelector('svg').innerHTML = '<polygon points="5 3 19 12 5 21"/>';
+      statusText.textContent = 'Session Paused';
+      liveDot.classList.remove('blinking');
+      liveDot.style.opacity = '0.4';
+    }
+    
+    // Instantly update timer styling
+    document.getElementById('session-clock-text').innerHTML = formatSeconds(state.secondsElapsed, state.isSessionRunning);
+  }
+
+  // Stop Session
+  function stopSession() {
+    state.isSessionRunning = false;
+    state.secondsElapsed = 24 * 60 + 38; // Reset back to initial mockup values
+    switchTab('home');
+  }
+
+  // Log water amount dynamically
+  function logWaterAmount(amountMl, logTitle = 'Water log') {
+    state.waterConsumedMl += amountMl;
+    
+    // Add to logs array
+    const now = new Date();
+    let hours = now.getHours();
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // key 12 hr check
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const timestamp = `${hours}:${minutes} ${ampm}`;
+
+    state.hydrationLog.unshift({
+      title: logTitle,
+      time: timestamp,
+      amount: `${amountMl} ml`
+    });
+
+    renderHydrationStats();
+  }
+
+  // Log custom water amount
+  function logWaterCustom() {
+    const val = prompt("Enter custom hydration amount (ml):", "250");
+    const intVal = parseInt(val, 10);
+    if (intVal && intVal > 0) {
+      logWaterAmount(intVal, 'Custom log');
+    }
+  }
+
+  // Log from Session reminder card
+  function logSessionReminder() {
+    logWaterAmount(250, 'Session Hydration');
+    state.loggedSessionWaterMl += 250;
+    
+    // Render dynamic updates on stopwatch view
+    document.getElementById('session-logged-display').textContent = `${state.loggedSessionWaterMl}ml`;
+  }
+
+  // Jump directly to Profile view
+  function openProfile() {
+    showScreen('profile');
+    // Clear tabs active highlights
+    document.querySelectorAll('.tab-item').forEach(tab => {
+      tab.classList.remove('active');
+    });
+  }
+
+  // Render & calculate all hydration parameters
+  function renderHydrationStats() {
+    const percentage = Math.min(Math.round((state.waterConsumedMl / state.waterGoalMl) * 100), 100);
+    const litresValue = (state.waterConsumedMl / 1000).toFixed(1);
+
+    // Update Home values
+    document.getElementById('home-water-litres').textContent = litresValue;
+    document.getElementById('home-water-percent').textContent = percentage;
+    document.getElementById('home-water-progress-fill').style.width = `${percentage}%`;
+
+    // Update Home SVG Circular progress offset (194.8 is full length stroke-dasharray)
+    // 50% = 97.4 offset
+    const homeOffset = 194.8 - (194.8 * (percentage / 100));
+    document.querySelector('.progress-ring-fill-blue').style.strokeDashoffset = homeOffset;
+
+    // Update Hydration Tracker view values
+    document.getElementById('hydrate-consumed-text').textContent = `${litresValue}L`;
+    const hydrateOffset = 389.6 - (389.6 * (percentage / 100));
+    document.querySelector('.progress-ring-fill-large').style.strokeDashoffset = hydrateOffset;
+
+    // Update intake log counts
+    document.getElementById('log-summary-text').textContent = `${state.hydrationLog.length} entries · ${state.waterConsumedMl.toLocaleString()} ml`;
+
+    // Build log list elements
+    const logList = document.getElementById('hydration-log-list');
+    logList.innerHTML = '';
+    state.hydrationLog.forEach(log => {
+      const item = document.createElement('div');
+      item.className = 'log-item';
+      item.innerHTML = `
+        <div class="log-dot"></div>
+        <div class="log-item-info">
+          <span>${log.title}</span>
+          <small>${log.time}</small>
+        </div>
+        <div class="log-ml">${log.amount}</div>
+      `;
+      logList.appendChild(item);
+    });
+  }
+
+  // OpenWeather API Integration
+  const WEATHER_API_KEY = "290a9c6434dba83510f770251706cd9a";
+
+  function initRealTimeWeather() {
+    console.log("Initializing OpenWeather real-time connection...");
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          fetchWeatherData(lat, lon);
+        },
+        (error) => {
+          console.warn("Geolocation denied or unavailable, using Jaipur as fallback:", error);
+          fetchWeatherData(26.9124, 75.7873); // Jaipur coordinates
+        }
+      );
+    } else {
+      console.warn("Geolocation is not supported by this browser, using Jaipur as fallback.");
+      fetchWeatherData(26.9124, 75.7873);
+    }
+  }
+
+  function fetchWeatherData(lat, lon) {
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric`;
+    
+    fetch(url)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Weather API returned status ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("Weather data successfully fetched:", data);
+        const temp = data.main.temp;
+        const feelsLike = data.main.feels_like;
+        const humidity = data.main.humidity;
+        const city = data.name || "Local Area";
+        const country = data.sys ? data.sys.country : "";
+        const desc = data.weather && data.weather[0] ? data.weather[0].description : "clear conditions";
+        
+        updateWeatherUI(temp, feelsLike, humidity, city, country, desc);
+      })
+      .catch(err => {
+        console.error("Error fetching weather data, falling back to simulated values:", err);
+        // Clean fallback
+        updateWeatherUI(42, 47, 28, "Jaipur", "IN", "clear sky");
+      });
+  }
+
+  function updateWeatherUI(temp, feelsLike, humidity, city, country, desc) {
+    const roundedTemp = Math.round(temp);
+    const roundedFeels = Math.round(feelsLike);
+    
+    let riskLevel = "Low Risk";
+    let riskLabelText = "Safe Heat Index";
+    let riskSubLabel = "Safe outdoor levels. Stay active and hydrated!";
+    let gradientClass = "risk-low-gradient";
+    let activeSegId = "heat-scale-low";
+    let crtText = "Low — safe levels";
+
+    if (temp >= 40) {
+      riskLevel = "Extreme Risk";
+      riskLabelText = "Extreme Heat Warning Active";
+      riskSubLabel = "Dangerous exposure. Avoid outdoor activities!";
+      gradientClass = "risk-extreme-gradient";
+      activeSegId = "heat-scale-vhigh";
+      crtText = "Extreme — stay indoors!";
+    } else if (temp >= 35) {
+      riskLevel = "High Risk";
+      riskLabelText = "Heat Warning Active";
+      riskSubLabel = "Stay in shaded areas and drink plenty of water.";
+      gradientClass = "risk-high-gradient";
+      activeSegId = "heat-scale-high";
+      crtText = "High — take precautions now";
+    } else if (temp >= 28) {
+      riskLevel = "Moderate Risk";
+      riskLabelText = "Moderate Heat Exposure";
+      riskSubLabel = "Keep water close and take regular shade breaks.";
+      gradientClass = "risk-mod-gradient";
+      activeSegId = "heat-scale-mod";
+      crtText = "Moderate — stay aware";
+    }
+
+    // 1. Update Home Risk Card Gradient and Content
+    const riskCard = document.getElementById("home-risk-card");
+    if (riskCard) {
+      riskCard.classList.remove("risk-low-gradient", "risk-mod-gradient", "risk-high-gradient", "risk-extreme-gradient");
+      riskCard.classList.add(gradientClass);
+    }
+
+    const homeRiskLevel = document.getElementById("home-risk-level");
+    if (homeRiskLevel) homeRiskLevel.textContent = riskLevel;
+
+    const homeTempDisplay = document.getElementById("home-temp-display");
+    if (homeTempDisplay) homeTempDisplay.innerHTML = `${roundedTemp}<sup>°C</sup>`;
+
+    const homeRiskLabel = document.getElementById("home-risk-label");
+    if (homeRiskLabel) homeRiskLabel.textContent = riskLabelText;
+
+    const homeRiskSublabel = document.getElementById("home-risk-sublabel");
+    if (homeRiskSublabel) {
+      const locationString = country ? `${city}, ${country}` : city;
+      homeRiskSublabel.textContent = `${locationString} · Updated now`;
+    }
+
+    const homeHumidity = document.getElementById("home-humidity");
+    if (homeHumidity) homeHumidity.textContent = `${humidity}% humidity`;
+
+    const homeFeelsLike = document.getElementById("home-feels-like");
+    if (homeFeelsLike) homeFeelsLike.textContent = `Feels like ${roundedFeels}°C`;
+
+    // 2. Update Climate Onboarding screen
+    const onboardingTemp = document.getElementById("climate-onboarding-temp");
+    if (onboardingTemp) onboardingTemp.textContent = `${roundedTemp}°`;
+
+    const onboardingDesc = document.getElementById("climate-onboarding-desc");
+    if (onboardingDesc) {
+      onboardingDesc.textContent = `Currently experiencing ${desc} (${roundedTemp}°C) in ${city}. Monitor outdoor exposure, hydration, and heat risk in one calm experience.`;
+    }
+
+    // 3. Update Heat Risk Details Screen
+    const heatTemp = document.getElementById("heat-temp");
+    if (heatTemp) heatTemp.textContent = roundedTemp;
+
+    const heatFeels = document.getElementById("heat-feels");
+    if (heatFeels) heatFeels.textContent = roundedFeels;
+
+    const heatHumidity = document.getElementById("heat-humidity");
+    if (heatHumidity) heatHumidity.textContent = humidity;
+
+    const heatCrtText = document.getElementById("heat-crt-text");
+    if (heatCrtText) heatCrtText.textContent = crtText;
+
+    // Dynamically calculate and approximate UV index based on temp/clouds for realism
+    let approximatedUV = 3;
+    let uvText = " moderate";
+    if (temp >= 40) {
+      approximatedUV = 11;
+      uvText = " extreme";
+    } else if (temp >= 35) {
+      approximatedUV = 9;
+      uvText = " very high";
+    } else if (temp >= 28) {
+      approximatedUV = 6;
+      uvText = " high";
+    }
+    const heatUv = document.getElementById("heat-uv");
+    if (heatUv) {
+      heatUv.textContent = approximatedUV;
+      const unitSpan = heatUv.nextElementSibling;
+      if (unitSpan) unitSpan.textContent = uvText;
+    }
+
+    // 4. Update the Active Segment Outline in scale visualizer
+    document.querySelectorAll(".scale-seg").forEach(seg => {
+      seg.classList.remove("active-segment");
+    });
+    const activeSeg = document.getElementById(activeSegId);
+    if (activeSeg) activeSeg.classList.add("active-segment");
+  }
+
+  // Initialize view displays and real-time weather connections
+  renderHydrationStats();
+  initRealTimeWeather();
+</script>
+
+</body>
+</html>
