@@ -1,7 +1,6 @@
 # HeatSafe
 A climate-aware wellness app designed to help users stay hydrated, monitor heat risk, and build safer outdoor habits.
-<img width="1920" height="1128" alt="image" src="https://github.com/user-attachments/assets/0042b55f-ef96-45c4-b91a-9e18cab8572c" />
-<img width="1920" height="1128" alt="image" src="https://github.com/user-attachments/assets/4faf0db1-9eae-42f6-9176-0cb4247e0507" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/4a279fcb-28a6-4a5c-a179-22408ac63aa8" />
 
 
 ## Features
